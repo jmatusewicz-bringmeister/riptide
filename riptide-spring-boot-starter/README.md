@@ -374,7 +374,7 @@ overridden by name, **not** by type. As an example, the following code would add
 @Bean
 @Qualifier("example")
 public ClientHttpMessageConverters exampleHttpMessageConverters() {
-    return new ClientHttpMessageConverters(new Jaxb2RootElementHttpMessageConverter());
+    return new ClientHttpMessageConverters(singletonList(new Jaxb2RootElementHttpMessageConverter()));
 }
 ```
 
@@ -399,6 +399,45 @@ If you override a bean then all of its dependencies (see the [graph](#customizat
 unless required by some other bean.
 
 In case you need more than one custom plugin, please use `Plugin.compound(Plugin...)`.
+
+### Testing
+
+Similar to Spring Boot's [`@RestClientTest`](https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/test/autoconfigure/web/client/RestClientTest.html),
+`@RiptideClientTest` is provided. This annotation allows for convenient testing of Riptide `Http` clients.
+
+```
+@Component
+public class GatewayService {
+
+    @Autowired
+    @Qualifier("example")
+    private Http http;
+
+    void remoteCall() {
+        http.get("/bar").dispatch(status(), on(OK).call(pass())).join();
+    }
+}
+
+@RunWith(SpringRunner.class)
+@RiptideClientTest(GatewayService.class)
+public class RiptideTest {
+
+    @Autowired
+    private GatewayService client;
+
+    @Autowired
+    private MockRestServiceServer server;
+
+    @Test
+    public void shouldAutowireMockedHttp() throws Exception {
+        server.expect(requestTo("https://example.com/bar")).andRespond(withSuccess());
+        client.remoteCall()
+        server.verify();
+    }
+}
+```
+
+Mind that all components of a client below and including `AsyncClientHttpRequestFactory` are replaced by mocks.
 
 ## Getting Help
 

@@ -39,7 +39,7 @@ public final class BackupRequestPluginTest {
     private final Http unit = Http.builder()
             .baseUrl(driver.getBaseUrl())
             .requestFactory(factory)
-            .plugin(new BackupRequestPlugin(newSingleThreadScheduledExecutor(), 1, SECONDS))
+            .plugin(new BackupRequestPlugin(newSingleThreadScheduledExecutor(), 1, SECONDS, executor))
             .build();
 
     @After
@@ -73,7 +73,7 @@ public final class BackupRequestPluginTest {
 
         unit.get("/bar")
                 .call(pass())
-                .get(2500, TimeUnit.MILLISECONDS);
+                .get(3, SECONDS);
     }
 
     @Test(expected = IllegalStateException.class)

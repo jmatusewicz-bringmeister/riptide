@@ -130,7 +130,7 @@ http.post("/sales-order")
     //...
 ```
 
-Riptide the the following HTTP methods: `get`, `head`, `post`, `put`, `patch`, `delete`, `options` and `trace`
+Riptide supports the following HTTP methods: `get`, `head`, `post`, `put`, `patch`, `delete`, `options` and `trace`
 respectively. Query parameters can either be provided individually using `queryParam(String, String)` or multiple at 
 once with `queryParams(Multimap<String, String>)`.
 
@@ -250,6 +250,9 @@ Http.builder()
 
 We basically use an intermediate `AsyncRestTemplate` as a holder of the special `AsyncClientHttpRequestFactory` that the
 `MockRestServiceServer` manages.
+
+If you are using the [Spring Boot Starter](riptide-spring-boot-starter) the test setup is provided by a convenient annotation `@RiptideClientTest`, 
+see [here](riptide-spring-boot-starter/README.md#testing).
 
 ## Getting help
 

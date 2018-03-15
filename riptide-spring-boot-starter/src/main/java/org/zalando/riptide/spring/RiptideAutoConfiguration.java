@@ -4,19 +4,31 @@ import com.codahale.metrics.MetricRegistry;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.actuate.metrics.GaugeService;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.zalando.riptide.metrics.MetricsPlugin;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.DEFAULT_TASK_SCHEDULER_BEAN_NAME;
 
 @Configuration
 @AutoConfigureAfter(name = {
         "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration",
         "org.zalando.logbook.spring.LogbookAutoConfiguration",
         "org.zalando.tracer.spring.TracerAutoConfiguration",
+        "org.zalando.tracer.spring.TracerSchedulingAutoConfiguration",  // only needed for tracer < 0.12.0
+})
+@AutoConfigureBefore(name = {
+        "org.springframework.scheduling.annotation.SchedulingConfiguration",
+        "org.zalando.failsafeactuator.config.FailsafeInjectionConfiguration"
 })
 public class RiptideAutoConfiguration {
 
@@ -26,6 +38,7 @@ public class RiptideAutoConfiguration {
     }
 
     @Configuration
+    @ConditionalOnClass(MetricsPlugin.class)
     @ConditionalOnMissingBean(MetricsPlugin.class)
     @ConditionalOnBean(MetricRegistry.class)
     static class MetricsConfiguration {
@@ -48,6 +61,19 @@ public class RiptideAutoConfiguration {
                 registry.timer(metricName).update((long) value, MILLISECONDS);
             }
 
+        }
+
+    }
+
+    @Configuration
+    @ConditionalOnClass(Scheduled.class)
+    static class SchedulingAutoConfiguration {
+
+        @Bean(name = DEFAULT_TASK_SCHEDULER_BEAN_NAME, destroyMethod = "shutdown")
+        @ConditionalOnMissingBean(name = DEFAULT_TASK_SCHEDULER_BEAN_NAME)
+        public ScheduledExecutorService taskScheduler() {
+            final int corePoolSize = Runtime.getRuntime().availableProcessors();
+            return Executors.newScheduledThreadPool(corePoolSize);
         }
 
     }
